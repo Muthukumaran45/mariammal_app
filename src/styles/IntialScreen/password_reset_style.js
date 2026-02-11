@@ -1,0 +1,287 @@
+import { StyleSheet } from "react-native";
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import { COLORS } from "../Color";
+
+export const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  keyboardAvoidView: {
+    flex: 1,
+  },
+  scrollContainer: {
+    flexGrow: 1,
+  },
+  topSection: {
+    height: hp('45%'),
+    position: 'relative',
+  },
+  gradient: {
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+    backgroundColor: COLORS.primary
+  },
+  decorativeCircle1: {
+    position: 'absolute',
+    top: -hp('5%'),
+    right: -wp('10%'),
+    width: wp('30%'),
+    height: wp('30%'),
+    borderRadius: wp('15%'),
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  decorativeCircle2: {
+    position: 'absolute',
+    top: hp('8%'),
+    left: -wp('8%'),
+    width: wp('20%'),
+    height: wp('20%'),
+    borderRadius: wp('10%'),
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+  },
+  decorativeCircle3: {
+    position: 'absolute',
+    bottom: hp('5%'),
+    right: wp('5%'),
+    width: wp('15%'),
+    height: wp('15%'),
+    borderRadius: wp('7.5%'),
+    backgroundColor: 'rgba(255, 255, 255, 0.12)',
+  },
+  backButton: {
+    position: 'absolute',
+    left: wp('5%'),
+    zIndex: 10,
+    padding: wp('2%'),
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: wp('60%'),
+    top: hp(3)
+
+
+  },
+  contentContainer: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: wp('5%'),
+    paddingTop: hp('8%'),
+    paddingBottom: hp('3%'),
+
+  },
+  logoContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  logoIconContainer: {
+    width: wp('12%'),
+    height: wp('12%'),
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    borderRadius: wp('6%'),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: wp('3%'),
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  logoEmoji: {
+    fontSize: wp('7%'),
+  },
+  logoText: {
+    fontSize: wp('6.5%'),
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+  },
+  titleContainer: {
+    alignItems: 'center',
+    marginVertical: hp('2%'),
+  },
+  welcomeText: {
+    fontSize: wp('8%'),
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: hp('1%'),
+  },
+  subtitleText: {
+    fontSize: wp('4%'),
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    lineHeight: wp('5.5%'),
+  },
+  illustrationContainer: {
+    alignItems: 'center',
+  },
+  illustrationBackground: {
+    width: wp('35%'),
+    height: wp('35%'),
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: wp('17.5%'),
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  illustration: {
+    width: wp('20%'),
+    height: wp('20%'),
+  },
+  bottomCurve: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: hp('4%'),
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: wp('8%'),
+    borderTopRightRadius: wp('8%'),
+  },
+  formSection: {
+    flex: 1,
+    paddingHorizontal: wp('7%'),
+    paddingTop: hp('1%'),
+    marginTop: -hp('2%'),
+  },
+  infoCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: '#F8F9FA',
+    padding: wp('4%'),
+    borderRadius: wp('4%'),
+    marginBottom: hp('3%'),
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  infoIconContainer: {
+    width: wp('10%'),
+    height: wp('10%'),
+    backgroundColor: 'rgba(46, 125, 50, 0.1)',
+    borderRadius: wp('5%'),
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: wp('3%'),
+  },
+  infoTextContainer: {
+    flex: 1,
+  },
+  infoTitle: {
+    fontSize: wp('4.2%'),
+    fontWeight: '600',
+    color: '#2E7D32',
+    marginBottom: hp('0.5%'),
+  },
+  infoText: {
+    fontSize: wp('3.5%'),
+    color: '#6C757D',
+    lineHeight: wp('5%'),
+  },
+  inputContainer: {
+    marginBottom: hp('2.5%'),
+  },
+  inputLabel: {
+    fontSize: wp('4%'),
+    color: '#2C3E50',
+    marginBottom: hp('1%'),
+    fontWeight: '600',
+    paddingLeft: wp('1%'),
+  },
+  textInputContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: wp('4%'),
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E9ECEF',
+  },
+  inputFocused: {
+    borderColor: '#2E7D32',
+    backgroundColor: 'rgba(46, 125, 50, 0.05)',
+  },
+  inputIconContainer: {
+    width: wp('12%'),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  textInput: {
+    flex: 1,
+    paddingVertical: hp('2%'),
+    fontSize: wp('4%'),
+    color: '#2C3E50',
+    paddingRight: wp('3%'),
+  },
+  eyeIcon: {
+    padding: wp('3%'),
+  },
+  requirementsContainer: {
+    backgroundColor: '#F8F9FA',
+    padding: wp('4%'),
+    borderRadius: wp('4%'),
+    marginBottom: hp('3%'),
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  requirementsTitle: {
+    fontSize: wp('4%'),
+    fontWeight: '600',
+    color: '#2C3E50',
+    marginBottom: hp('1.5%'),
+  },
+  requirementItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: hp('0.8%'),
+  },
+  requirementText: {
+    fontSize: wp('3.5%'),
+    color: '#6C757D',
+    marginLeft: wp('2%'),
+  },
+  requirementMet: {
+    color: '#4CAF50',
+    fontWeight: '500',
+  },
+  resetButton: {
+    backgroundColor: '#2E7D32',
+    borderRadius: wp('4%'),
+    paddingVertical: hp('2.2%'),
+    alignItems: 'center',
+    marginBottom: hp('3%'),
+    shadowColor: '#2E7D32',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  buttonDisabled: {
+    backgroundColor: '#B0B0B0',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  resetButtonText: {
+    color: '#FFFFFF',
+    fontSize: wp('4.5%'),
+    fontWeight: '600',
+  },
+  backToLoginContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: hp('2%'),
+  },
+  backToLoginText: {
+    color: '#6C757D',
+    fontSize: wp('4%'),
+  },
+  backToLoginLink: {
+    color: '#2E7D32',
+    fontSize: wp('4%'),
+    fontWeight: 'bold',
+  },
+});
