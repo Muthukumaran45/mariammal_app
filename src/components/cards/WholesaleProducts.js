@@ -56,8 +56,23 @@ const RenderWholesaleItem = ({ item, userType }) => {
 
       </View>
 
+
+
       <View style={styles.footer}>
-        <Text style={styles.price}>₹{displayPrice?.toFixed(2)}</Text>
+
+        <View>
+          {item?.mrpPrice != null && Number(item.mrpPrice) > 0 && (
+            <Text style={{ fontSize: 12, }}>
+              MRP : <Text style={{
+                fontSize: 12,
+                color: "#888",
+                textDecorationLine: "line-through",
+              }}>₹{Number(item.mrpPrice).toFixed(2)}</Text>
+            </Text>
+          )}
+          <Text style={styles.price}>₹{displayPrice?.toFixed(2)}</Text>
+        </View>
+
         <TouchableOpacity style={styles.addButton}>
           <Text style={styles.addText}>+</Text>
         </TouchableOpacity>
@@ -227,7 +242,7 @@ const styles = StyleSheet.create({
   price: {
     fontWeight: "600",
     fontSize: 16,
-    color: COLORS.primary,
+    color: "#000",
   },
   addButton: {
     backgroundColor: COLORS.primary,

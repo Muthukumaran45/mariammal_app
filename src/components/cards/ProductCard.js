@@ -60,14 +60,32 @@ const RenderItem = ({ item, userType }) => {
 
       {/* price and add button */}
       <View style={styles.footer}>
-        <Text style={styles.price}>₹{displayPrice?.toFixed(2)}</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() =>
-          navigation?.navigate("ProductDetailsScreen", {
-            productDetails: { ...item, displayPrice },
-          })
-        }>
+
+        <View >
+          {/* MRP Price (strikethrough) */}
+          {item?.mrpPrice != null && Number(item.mrpPrice) > 0 && (
+            <Text style={{fontSize: 12,}}>
+              MRP : <Text style={styles.mrpPrice}>₹{Number(item.mrpPrice).toFixed(2)}</Text>
+            </Text>
+          )}
+
+          {/* Selling Price */}
+          <Text style={styles.price}>
+            ₹{displayPrice?.toFixed(2)}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={styles.addButton}
+          onPress={() =>
+            navigation?.navigate("ProductDetailsScreen", {
+              productDetails: { ...item, displayPrice },
+            })
+          }
+        >
           <Text style={styles.addText}>+</Text>
         </TouchableOpacity>
+
       </View>
     </TouchableOpacity>
   )
@@ -184,10 +202,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: hp(1),
     paddingBottom: hp(1),
   },
+  mrpPrice: {
+    fontSize: 12,
+    color: "#888",
+    textDecorationLine: "line-through",
+  },
+
   price: {
-    fontWeight: "600",
     fontSize: 16,
-    color: COLORS.primary,
+    fontWeight: "bold",
+    color: "#000",
   },
   addButton: {
     backgroundColor: COLORS.primary,

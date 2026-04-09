@@ -134,28 +134,73 @@ const AdminProducts = () => {
   })
 
   const renderProductItem = ({ item }) => {
-    const isFirebaseProduct = typeof item.id === "string" && item.id.length > 10
+    const isFirebaseProduct =
+      typeof item.id === "string" && item.id.length > 10
 
-    // Display price based on available price fields
+    // Display price
     const displayPrice = item.normalPrice || item.price || 0
+
+    // MRP price
+    const mrpPrice = item.mrpPrice || item.mrp || 0
 
     return (
       <View style={styles.productCard}>
         <View style={styles.productInfo}>
           <View style={styles.productIcon}>
             {item.imageUrl ? (
-              <Image source={{ uri: item.imageUrl }} style={{ width: wp("12%"), height: wp("12%"), borderRadius: 8 }} />
+              <Image
+                source={{ uri: item.imageUrl }}
+                style={{
+                  width: wp("12%"),
+                  height: wp("12%"),
+                  borderRadius: 8,
+                }}
+              />
             ) : (
               <Icon name="cube-outline" size={wp("6%")} color="#6B7280" />
             )}
           </View>
+
           <View style={styles.productDetails}>
-            <Text style={styles.productName}>{item.name}</Text>
-            <Text style={styles.productCategory}>{item.category || "General"}</Text>
-            <Text style={styles.productPrice}>
-              ₹{typeof displayPrice === "number" ? displayPrice.toFixed(2) : displayPrice}
+            <Text style={styles.productName}>
+              {item.name}
             </Text>
-            {/* Show wholesale indicator */}
+
+            <Text style={styles.productCategory}>
+              {item.category || "General"}
+            </Text>
+
+            {/* PRICE ROW */}
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+
+              {/* MRP (STRIKE) */}
+              {mrpPrice > 0 && (
+                <Text
+                  style={{
+                    fontSize: wp("3.5%"),
+                    color: "#9CA3AF",
+                    textDecorationLine: "line-through",
+                    marginRight: wp("2%"),
+                  }}
+                >
+                  ₹
+                  {typeof mrpPrice === "number"
+                    ? mrpPrice.toFixed(2)
+                    : mrpPrice}
+                </Text>
+              )}
+
+              {/* Selling Price */}
+              <Text style={styles.productPrice}>
+                ₹
+                {typeof displayPrice === "number"
+                  ? displayPrice.toFixed(2)
+                  : displayPrice}
+              </Text>
+
+            </View>
+
+            {/* Wholesale indicator */}
             {item.isWholesaleProduct && (
               <View
                 style={{
@@ -166,16 +211,42 @@ const AdminProducts = () => {
                   marginTop: hp("0.5%"),
                 }}
               >
-                <Text style={{ fontSize: wp("3%"), color: "#92400E", fontWeight: "500" }}>Wholesale Only</Text>
+                <Text
+                  style={{
+                    fontSize: wp("3%"),
+                    color: "#92400E",
+                    fontWeight: "500",
+                  }}
+                >
+                  Wholesale Only
+                </Text>
               </View>
             )}
+
           </View>
         </View>
+
         <View style={styles.productActions}>
-          <Text style={styles.productStock}>Stock: {item.quantity || item.stock}</Text>
-          <View style={[styles.statusBadge, getProductStatusColor(item.status)]}>
-            <Text style={[styles.statusText, getProductStatusTextColor(item.status)]}>{item.status}</Text>
+          <Text style={styles.productStock}>
+            Stock: {item.quantity || item.stock}
+          </Text>
+
+          <View
+            style={[
+              styles.statusBadge,
+              getProductStatusColor(item.status),
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusText,
+                getProductStatusTextColor(item.status),
+              ]}
+            >
+              {item.status}
+            </Text>
           </View>
+
           <TouchableOpacity
             style={styles.actionButton}
             onPress={() => {
@@ -185,7 +256,15 @@ const AdminProducts = () => {
               }
             }}
           >
-            <Icon name="ellipsis-vertical" size={wp("4%")} color={isFirebaseProduct ? "#6B7280" : "#D1D5DB"} />
+            <Icon
+              name="ellipsis-vertical"
+              size={wp("4%")}
+              color={
+                isFirebaseProduct
+                  ? "#6B7280"
+                  : "#D1D5DB"
+              }
+            />
           </TouchableOpacity>
         </View>
       </View>
@@ -368,7 +447,7 @@ const adminStyles = {
     shadowRadius: 3,
     elevation: 3,
     marginBottom: hp("1%"),
-       zIndex: 1000
+    zIndex: 1000
   },
   filterIcon: {
     marginRight: wp("2%"),

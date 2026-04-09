@@ -236,7 +236,6 @@ export const styles = StyleSheet.create({
     marginBottom: hp("0.5%"),
   },
   priceContainer: {
-    flexDirection: "row",
     alignItems: "baseline",
     marginBottom: hp("0.5%"),
   },

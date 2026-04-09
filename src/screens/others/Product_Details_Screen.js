@@ -31,7 +31,7 @@ const Product_Details_Screen = ({ route }) => {
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
-  
+
   // Modal states
   const [showModal, setShowModal] = useState(false);
   const [modalConfig, setModalConfig] = useState({
@@ -54,7 +54,7 @@ const Product_Details_Screen = ({ route }) => {
   // Effect to check initial favorite status
   useEffect(() => {
     const checkFavoriteStatus = async () => {
-      if ( userId && productDetails && productDetails.id) {
+      if (userId && productDetails && productDetails.id) {
         try {
           const wishlistDocRef = doc(db, 'users', userId, 'wishlist', productDetails.id);
           const docSnap = await getDoc(wishlistDocRef);
@@ -65,12 +65,12 @@ const Product_Details_Screen = ({ route }) => {
       }
     };
     checkFavoriteStatus();
-  }, [ userId, productDetails, db]);
+  }, [userId, productDetails, db]);
 
   useEffect(() => {
     console.log('Product Details:', productDetails);
     console.log('User ID:', userId);
-   
+
   }, [productDetails, userId]);
 
   // Auto-close modal after 2.5 seconds
@@ -166,7 +166,7 @@ const Product_Details_Screen = ({ route }) => {
 
   // Handle adding product to cart
   const handleAddToCart = async () => {
-  
+
     if (!productDetails) {
       showCustomModal({
         title: 'Error',
@@ -320,7 +320,7 @@ const Product_Details_Screen = ({ route }) => {
               >
                 <Text style={modalStyles.continueButtonText}>Continue Shopping</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[modalStyles.button, modalStyles.cartButton]}
                 onPress={() => {
@@ -355,7 +355,7 @@ const Product_Details_Screen = ({ route }) => {
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
       </View>
-      
+
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Product Image */}
         <View style={styles.imageContainer}>
@@ -367,7 +367,7 @@ const Product_Details_Screen = ({ route }) => {
             resizeMode="contain"
           />
         </View>
-        
+
         {/* Product Info */}
         <View style={styles.productInfo}>
           <View style={styles.titleRow}>
@@ -382,7 +382,7 @@ const Product_Details_Screen = ({ route }) => {
               />
             </TouchableOpacity>
           </View>
-          
+
           {/* Quantity and Price */}
           <View style={styles.quantityPriceRow}>
             <View style={styles.quantityContainer}>
@@ -402,23 +402,37 @@ const Product_Details_Screen = ({ route }) => {
             </View>
             <Text style={styles.price}>₹{getTotalPrice()}</Text>
           </View>
-          
+
           {/* Product Detail */}
           <View style={styles.detailSection}>
             <View style={styles.detailHeader}>
               <Text style={styles.detailTitle}>Product Detail</Text>
             </View>
+
+            <Text style={{
+
+            }}>
+              MRP : <Text style={{
+                fontSize: 12,
+                color: "#888",
+                textDecorationLine: "line-through",
+              }}>{productDetails?.mrpPrice}</Text>
+            </Text>
+
+            <Text>Price {productDetails?.price}</Text>
+
+
             <Text style={styles.detailText}>
               {productDetails?.description}
             </Text>
           </View>
         </View>
       </ScrollView>
-      
+
       {/* Add to Basket Button */}
       <View style={styles.bottomContainer}>
         <TouchableOpacity
-           style={[
+          style={[
             styles.addToBasketButton,
             (isAddingToCart || !productDetails?.isActive || (productDetails?.quantity || 0) === 0) && styles.addToBasketButtonDisabled
           ]}
@@ -427,9 +441,9 @@ const Product_Details_Screen = ({ route }) => {
         >
           <Text style={styles.addToBasketText}>
             {isAddingToCart
-               ? 'Adding to Cart...'
-               : (productDetails?.quantity || 0) === 0
-                 ? 'Out of Stock'
+              ? 'Adding to Cart...'
+              : (productDetails?.quantity || 0) === 0
+                ? 'Out of Stock'
                 : !productDetails?.isActive
                   ? 'Product Unavailable'
                   : 'Add To Basket'

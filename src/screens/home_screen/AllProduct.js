@@ -212,12 +212,20 @@ const AllProduct = ({ userType = "normal" }) => {
             {item.name || "No Name"}
           </Text>
           <View style={styles.priceContainer}>
+
+           {item?.mrpPrice != null && Number(item.mrpPrice) > 0 && (
+            <Text style={styles.mrpPrice}>
+              MRP : <Text style={{
+                color: "#888",
+                textDecorationLine: "line-through",
+              }}>₹{Number(item.mrpPrice).toFixed(2)}</Text>
+            </Text>
+          )}
             <Text style={styles.productPrice}>₹{displayPrice?.toFixed(2) || "0.00"}</Text>
             {item.originalPrice && item.originalPrice > displayPrice && (
               <Text style={styles.productOriginalPrice}>₹{item.originalPrice.toFixed(2)}</Text>
             )}
           </View>
-          <Text style={styles.productUnit}>{"per piece"}</Text>
         </View>
       </TouchableOpacity>
     )

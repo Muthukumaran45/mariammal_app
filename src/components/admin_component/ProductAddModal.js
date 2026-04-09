@@ -49,6 +49,7 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
   const [productForm, setProductForm] = useState({
     name: "",
     category: "",
+    mrpPrice: "",
     normalPrice: "",
     retailPrice: "",
     wholesalePrice: "",
@@ -68,6 +69,7 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
         setProductForm({
           name: selectedProduct.name || "",
           category: selectedProduct.category || "",
+          mrpPrice: selectedProduct.mrpPrice?.toString() || "",
           normalPrice: selectedProduct.normalPrice?.toString() || selectedProduct.price?.toString() || "",
           retailPrice: selectedProduct.retailPrice?.toString() || "",
           wholesalePrice: selectedProduct.wholesalePrice?.toString() || "",
@@ -87,6 +89,7 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
     setProductForm({
       name: "",
       category: "",
+      mrpPrice: "",
       normalPrice: "",
       retailPrice: "",
       wholesalePrice: "",
@@ -159,7 +162,7 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
   const validateForm = () => {
     if (!productForm.name.trim()) {
       infoAlert({ message: "Product name is required." });
-  
+
       return false
     }
     if (!productForm.category.trim()) {
@@ -170,6 +173,12 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
       Alert.alert("Error", "Normal user price is required")
       return false
     }
+
+    if (!productForm.mrpPrice.trim()) {
+      Alert.alert("Error", "MRP price is required")
+      return false
+    }
+
     if (!productForm.retailPrice.trim()) {
       Alert.alert("Error", "Retail user price is required")
       return false
@@ -201,6 +210,7 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
       const productData = {
         name: productForm.name.trim(),
         category: productForm.category.trim(),
+        mrpPrice: Number(productForm.mrpPrice),
         normalPrice: Number.parseFloat(productForm.normalPrice),
         retailPrice: Number.parseFloat(productForm.retailPrice),
         wholesalePrice: Number.parseFloat(productForm.wholesalePrice),
@@ -352,6 +362,35 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
                   ))}
                 </View>
               )}
+            </View>
+
+            {/* MRP */}
+            <View style={styles.formGroup}>
+              <Text style={styles.formLabel}>
+                MRP Price (₹) *
+              </Text>
+
+              <TextInput
+                style={{
+                  borderWidth: 1,
+                  borderColor: '#D1D5DB',
+                  borderRadius: 8,
+                  paddingHorizontal: 12,
+                  paddingVertical: 12,
+                  fontSize: wp('4%'),
+                  color: '#374151',
+                  backgroundColor: '#FFFFFF',
+                }}
+                placeholder="Enter MRP price"
+                keyboardType="decimal-pad"
+                value={productForm.mrpPrice}
+                onChangeText={(text) =>
+                  setProductForm((prev) => ({
+                    ...prev,
+                    mrpPrice: text,
+                  }))
+                }
+              />
             </View>
 
             {/* Price Fields */}
