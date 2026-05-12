@@ -142,7 +142,7 @@ const Categories_Screen = () => {
     
     if (selectedFilter === 'Trending') {
       matchesFilter = category.trending;
-    } else if (selectedFilter === 'Discounts') {
+    } else if (selectedFilter === 'Discounts') { 
       matchesFilter = category.discount !== '';
     }
     

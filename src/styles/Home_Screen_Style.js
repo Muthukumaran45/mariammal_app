@@ -156,14 +156,7 @@ export const styles = StyleSheet.create({
   offersContainer: {
     paddingHorizontal: wp('5%'),
   },
-  offerCard: {
-    width: wp('85%'),
-    height: hp('22%'),
-    marginRight: wp('4%'),
-    borderRadius: wp('4%'),
-    overflow: 'hidden',
-    position: 'relative',
-  },
+
   offerBackgroundImage: {
     width: '100%',
     height: '100%',

@@ -21,56 +21,45 @@ import { getApp } from "@react-native-firebase/app"
 import { useNavigation, useRoute } from "@react-navigation/native"
 import { styles } from "../../styles/product/All_Product_Style"
 
-// Define some basic colors and styles for the component
-const PRIMARY_COLOR = "#4CAD73"
-const TEXT_COLOR = "#333"
+// ✅ Dynamic categories hook – reads from the same Firestore 'categories'
+//    collection that AdminProducts / ProductAddModal write to.
+import useCategories from "../../stores/Usecategories"
+
+const PRIMARY_COLOR   = "#4CAD73"
 const LIGHT_TEXT_COLOR = "#666"
-const BORDER_COLOR = "#E0E0E0"
-const BACKGROUND_COLOR = "#F8F8F8"
-const WHOLESALE_COLOR = "#F59E0B"
 
 const AllProduct = ({ userType = "normal" }) => {
   const navigation = useNavigation()
-  const [products, setProducts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [loadingMore, setLoadingMore] = useState(false)
-  const [lastVisible, setLastVisible] = useState(null)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  const route      = useRoute()
+
+  const [products,          setProducts]          = useState([])
+  const [loading,           setLoading]           = useState(true)
+  const [loadingMore,       setLoadingMore]       = useState(false)
+  const [lastVisible,       setLastVisible]       = useState(null)
+  const [searchQuery,       setSearchQuery]       = useState("")
+  const [isRefreshing,      setIsRefreshing]      = useState(false)
   const [allProductsLoaded, setAllProductsLoaded] = useState(false)
-  const [activeTab, setActiveTab] = useState("products") // 'products' or 'wholesale'
-  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [activeTab,         setActiveTab]         = useState("products")
+  const [selectedCategory,  setSelectedCategory]  = useState("All")
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
 
-  // Category options
-  const categoryOptions = [
-    { label: "All", value: "All" },
-    { label: "Snacks", value: "Snacks" },
-    { label: "Cigarette", value: "Cigarette" },
-    { label: "Juice", value: "Juice" },
-    { label: "Daily Essentials", value: "Daily Essentials" },
-    { label: "Personal Care", value: "Personal Care" },
-  ]
-
-  const route = useRoute()
+  // ✅ Dynamic category list – updates in real-time when admin adds a category
+  const { categoryOptions } = useCategories()
 
   const app = getApp()
-  const db = getFirestore(app)
+  const db  = getFirestore(app)
   const PRODUCTS_PER_PAGE = 20
 
-  // Get price based on user type
+  // ── Price helper ────────────────────────────────────────────────────────────
   const getPrice = (item) => {
     switch (userType) {
-      case "retail_user":
-        return item?.retailPrice || item?.price || 0
-      case "wholesale_user":
-        return item?.wholesalePrice || item?.price || 0
-      case "normal":
-      default:
-        return item?.normalPrice || item?.price || 0
+      case "retail_user":    return item?.retailPrice    || item?.price || 0
+      case "wholesale_user": return item?.wholesalePrice || item?.price || 0
+      default:               return item?.normalPrice    || item?.price || 0
     }
   }
 
+  // ── Fetch products ──────────────────────────────────────────────────────────
   const fetchProducts = useCallback(
     async (isInitialLoad = true) => {
       if (isInitialLoad) {
@@ -87,11 +76,9 @@ const AllProduct = ({ userType = "normal" }) => {
       try {
         let productsQuery = collection(db, "products")
 
-        // Try to order by createdAt, but fallback if it doesn't exist
         try {
           productsQuery = query(productsQuery, orderBy("createdAt", "desc"), limit(PRODUCTS_PER_PAGE))
-        } catch (orderError) {
-          console.log("createdAt field not found, ordering by document ID instead")
+        } catch {
           productsQuery = query(productsQuery, limit(PRODUCTS_PER_PAGE))
         }
 
@@ -99,34 +86,21 @@ const AllProduct = ({ userType = "normal" }) => {
           productsQuery = query(productsQuery, startAfter(lastVisible))
         }
 
-        const documentSnapshots = await getDocs(productsQuery)
-        const newProducts = documentSnapshots.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }))
+        const snapshot    = await getDocs(productsQuery)
+        const newProducts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }))
 
-        // Filter products based on active tab
-        const filteredProducts = newProducts.filter((product) => {
-          const isActive = product.isActive === true || product.status === "Active"
+        const filtered = newProducts.filter((p) => {
+          const isActive = p.isActive === true || p.status === "Active"
           if (!isActive) return false
-
-          if (activeTab === "wholesale") {
-            return product.isWholesaleProduct === true
-          } else {
-            return !product.isWholesaleProduct
-          }
+          return activeTab === "wholesale" ? p.isWholesaleProduct === true : !p.isWholesaleProduct
         })
 
-        console.log(`Fetched ${newProducts.length} products, ${filteredProducts.length} filtered for ${activeTab}`)
+        if (newProducts.length < PRODUCTS_PER_PAGE) setAllProductsLoaded(true)
 
-        if (newProducts.length < PRODUCTS_PER_PAGE) {
-          setAllProductsLoaded(true)
-        }
+        setProducts((prev) => (isInitialLoad ? filtered : [...prev, ...filtered]))
 
-        setProducts((prevProducts) => (isInitialLoad ? filteredProducts : [...prevProducts, ...filteredProducts]))
-
-        if (documentSnapshots.docs.length > 0) {
-          setLastVisible(documentSnapshots.docs[documentSnapshots.docs.length - 1])
+        if (snapshot.docs.length > 0) {
+          setLastVisible(snapshot.docs[snapshot.docs.length - 1])
         }
       } catch (error) {
         console.error("Error fetching products:", error)
@@ -140,59 +114,39 @@ const AllProduct = ({ userType = "normal" }) => {
     [db, lastVisible, loadingMore, allProductsLoaded, activeTab],
   )
 
-  useEffect(() => {
-    fetchProducts(true)
-  }, [activeTab])
+  useEffect(() => { fetchProducts(true) }, [activeTab])
 
-  // Handle route parameters for category selection
+  // Handle route param category pre-selection
   useEffect(() => {
     if (route.params?.category && route.params.category !== selectedCategory) {
       setSelectedCategory(route.params.category)
     }
   }, [route.params?.category])
 
-  const handleTabChange = (tab) => {
-    if (tab !== activeTab) {
-      setActiveTab(tab)
-      setSearchQuery("") // Clear search when switching tabs
-    }
-  }
+  // ── Handlers ────────────────────────────────────────────────────────────────
+  const handleTabChange     = (tab) => { if (tab !== activeTab) { setActiveTab(tab); setSearchQuery("") } }
+  const handleLoadMore      = ()    => { if (!loadingMore && !allProductsLoaded) fetchProducts(false) }
+  const handleRefresh       = ()    => { setIsRefreshing(true); fetchProducts(true) }
+  const handleCategorySelect = (cat) => { setSelectedCategory(cat); setShowCategoryDropdown(false) }
 
-  const handleLoadMore = () => {
-    if (!loadingMore && !allProductsLoaded) {
-      fetchProducts(false)
-    }
-  }
-
-  const handleRefresh = () => {
-    setIsRefreshing(true)
-    fetchProducts(true)
-  }
-
-  const handleCategorySelect = (category) => {
-    setSelectedCategory(category)
-    setShowCategoryDropdown(false)
-  }
-
-  // Filter products based on search query and category with better error handling
-  const filteredProducts = products.filter((product) => {
+  // ── Filtered list ───────────────────────────────────────────────────────────
+  const filteredProducts = products.filter((p) => {
     if (!searchQuery && selectedCategory === "All") return true
 
-    const searchLower = searchQuery.toLowerCase()
-    const name = product.name ? product.name.toLowerCase() : ""
-    const category = product.category ? product.category.toLowerCase() : ""
-    const description = product.description ? product.description.toLowerCase() : ""
+    const q    = searchQuery.toLowerCase()
+    const name = (p.name        || "").toLowerCase()
+    const cat  = (p.category    || "").toLowerCase()
+    const desc = (p.description || "").toLowerCase()
 
-    const matchesSearch =
-      !searchQuery || name.includes(searchLower) || category.includes(searchLower) || description.includes(searchLower)
-    const matchesCategory = selectedCategory === "All" || (product.category && product.category === selectedCategory)
+    const matchesSearch   = !searchQuery || name.includes(q) || cat.includes(q) || desc.includes(q)
+    const matchesCategory = selectedCategory === "All" || p.category === selectedCategory
 
     return matchesSearch && matchesCategory
   })
 
+  // ── Renderers ───────────────────────────────────────────────────────────────
   const renderProductItem = ({ item }) => {
     const displayPrice = getPrice(item)
-
     return (
       <TouchableOpacity
         style={[styles.productCard, activeTab === "wholesale" && styles.wholesaleProductCard]}
@@ -208,19 +162,15 @@ const AllProduct = ({ userType = "normal" }) => {
           )}
         </View>
         <View style={styles.productInfo}>
-          <Text style={styles.productName} numberOfLines={2}>
-            {item.name || "No Name"}
-          </Text>
+          <Text style={styles.productName} numberOfLines={2}>{item.name || "No Name"}</Text>
           <View style={styles.priceContainer}>
-
-           {item?.mrpPrice != null && Number(item.mrpPrice) > 0 && (
-            <Text style={styles.mrpPrice}>
-              MRP : <Text style={{
-                color: "#888",
-                textDecorationLine: "line-through",
-              }}>₹{Number(item.mrpPrice).toFixed(2)}</Text>
-            </Text>
-          )}
+            {item?.mrpPrice != null && Number(item.mrpPrice) > 0 && (
+              <Text style={styles.mrpPrice}>
+                MRP : <Text style={{ color: "#888", textDecorationLine: "line-through" }}>
+                  ₹{Number(item.mrpPrice).toFixed(2)}
+                </Text>
+              </Text>
+            )}
             <Text style={styles.productPrice}>₹{displayPrice?.toFixed(2) || "0.00"}</Text>
             {item.originalPrice && item.originalPrice > displayPrice && (
               <Text style={styles.productOriginalPrice}>₹{item.originalPrice.toFixed(2)}</Text>
@@ -231,15 +181,13 @@ const AllProduct = ({ userType = "normal" }) => {
     )
   }
 
-  const renderFooter = () => {
-    if (!loadingMore) return null
-    return (
+  const renderFooter = () =>
+    !loadingMore ? null : (
       <View style={styles.loadingMoreContainer}>
         <ActivityIndicator size="small" color={PRIMARY_COLOR} />
         <Text style={styles.loadingMoreText}>Loading more products...</Text>
       </View>
     )
-  }
 
   const renderEmptyState = () => {
     if (loading) return null
@@ -247,15 +195,15 @@ const AllProduct = ({ userType = "normal" }) => {
       <View style={styles.emptyStateContainer}>
         <Ionicons
           name={activeTab === "wholesale" ? "business-outline" : "cube-outline"}
-          size={wp("15%")}
-          color={LIGHT_TEXT_COLOR}
-          style={{ opacity: 0.5 }}
+          size={wp("15%")} color={LIGHT_TEXT_COLOR} style={{ opacity: 0.5 }}
         />
         <Text style={styles.emptyStateText}>
           {activeTab === "wholesale" ? "No wholesale products found." : "No products found."}
           {selectedCategory !== "All" && ` in ${selectedCategory} category.`}
         </Text>
-        {searchQuery !== "" && <Text style={styles.emptyStateSubText}>Try adjusting your search or filters.</Text>}
+        {searchQuery !== "" && (
+          <Text style={styles.emptyStateSubText}>Try adjusting your search or filters.</Text>
+        )}
         {products.length === 0 && !searchQuery && (
           <TouchableOpacity style={styles.retryButton} onPress={() => fetchProducts(true)}>
             <Text style={styles.retryButtonText}>Retry</Text>
@@ -271,8 +219,7 @@ const AllProduct = ({ userType = "normal" }) => {
       onPress={() => handleTabChange(tab)}
     >
       <Ionicons
-        name={icon}
-        size={wp("4.5%")}
+        name={icon} size={wp("4.5%")}
         color={activeTab === tab ? "#FFFFFF" : LIGHT_TEXT_COLOR}
         style={styles.tabIcon}
       />
@@ -280,6 +227,7 @@ const AllProduct = ({ userType = "normal" }) => {
     </TouchableOpacity>
   )
 
+  // ── Render ──────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={PRIMARY_COLOR} />
@@ -287,15 +235,14 @@ const AllProduct = ({ userType = "normal" }) => {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={() => navigation.navigate("BottomNavigation")}>
-          <Ionicons name="arrow-back" size={wp('6%')} color="#fff" />
+          <Ionicons name="arrow-back" size={wp("6%")} color="#fff" />
         </TouchableOpacity>
-        
         <Text style={styles.headerTitle}>All Products</Text>
       </View>
 
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
-        {renderTabButton("products", "Products", "cube-outline")}
+        {renderTabButton("products",  "Products",  "cube-outline")}
         {renderTabButton("wholesale", "Wholesale", "business-outline")}
       </View>
 
@@ -312,7 +259,7 @@ const AllProduct = ({ userType = "normal" }) => {
         />
       </View>
 
-      {/* Category Filter */}
+      {/* ✅ Category Filter – options come from useCategories (Firestore live) */}
       <View style={styles.filterContainer}>
         <View style={styles.categoryFilterContainer}>
           <Ionicons name="filter-outline" size={wp("4.5%")} color="#6B7280" style={styles.filterIcon} />
@@ -321,8 +268,12 @@ const AllProduct = ({ userType = "normal" }) => {
             onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
           >
             <Text style={styles.categoryDropdownText}>{selectedCategory}</Text>
-            <Ionicons name={showCategoryDropdown ? "chevron-up" : "chevron-down"} size={wp("4%")} color="#9CA3AF" />
+            <Ionicons
+              name={showCategoryDropdown ? "chevron-up" : "chevron-down"}
+              size={wp("4%")} color="#9CA3AF"
+            />
           </TouchableOpacity>
+
           {showCategoryDropdown && (
             <View style={styles.categoryDropdownMenu}>
               {categoryOptions.map((option) => (
@@ -334,15 +285,15 @@ const AllProduct = ({ userType = "normal" }) => {
                   ]}
                   onPress={() => handleCategorySelect(option.value)}
                 >
-                  <Text
-                    style={[
-                      styles.categoryDropdownOptionText,
-                      selectedCategory === option.value && styles.categoryDropdownOptionTextSelected,
-                    ]}
-                  >
+                  <Text style={[
+                    styles.categoryDropdownOptionText,
+                    selectedCategory === option.value && styles.categoryDropdownOptionTextSelected,
+                  ]}>
                     {option.label}
                   </Text>
-                  {selectedCategory === option.value && <Ionicons name="checkmark" size={wp("4%")} color="#4CAD73" />}
+                  {selectedCategory === option.value && (
+                    <Ionicons name="checkmark" size={wp("4%")} color="#4CAD73" />
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -353,7 +304,9 @@ const AllProduct = ({ userType = "normal" }) => {
       {loading && products.length === 0 ? (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={PRIMARY_COLOR} />
-          <Text style={styles.loadingText}>Fetching {activeTab === "wholesale" ? "wholesale " : ""}products...</Text>
+          <Text style={styles.loadingText}>
+            Fetching {activeTab === "wholesale" ? "wholesale " : ""}products...
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -371,14 +324,8 @@ const AllProduct = ({ userType = "normal" }) => {
           onRefresh={handleRefresh}
         />
       )}
-
-
     </SafeAreaView>
   )
 }
 
 export default AllProduct
-
-
-
-

@@ -15,20 +15,30 @@ import {
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from "react-native-responsive-screen"
 import Icon from "react-native-vector-icons/Ionicons"
 import { launchImageLibrary } from "react-native-image-picker"
-import { getFirestore, collection, addDoc, doc, updateDoc } from "@react-native-firebase/firestore"
+import { getFirestore, collection, addDoc, doc, updateDoc, getDocs, setDoc } from "@react-native-firebase/firestore"
 import { getApp } from "@react-native-firebase/app"
 import { infoAlert } from "../ToastServices"
 import { styles } from "../../styles/admin_style/Admin_style"
 
-const CLOUDINARY_CLOUD_NAME = "dnzxttpjy";
+const CLOUDINARY_CLOUD_NAME = "dnzxttpjy"
 const CLOUDINARY_UPLOAD_PRESET = "mariammal_store"
+
+const BASE_CATEGORIES = [
+  { label: "Snacks", value: "Snacks" },
+  { label: "Cigarette", value: "Cigarette" },
+  { label: "Juice", value: "Juice" },
+  { label: "Daily Essentials", value: "Daily Essentials" },
+  { label: "Personal Care", value: "Personal Care" },
+]
 
 const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProductSaved }) => {
   const [uploading, setUploading] = useState(false)
   const [showStatusDropdown, setShowStatusDropdown] = useState(false)
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [customCategories, setCustomCategories] = useState([])
+  const [newCategoryInput, setNewCategoryInput] = useState("")
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false)
 
-  // Status options for dropdown
   const statusOptions = [
     { label: "Active", value: "Active" },
     { label: "Out of Stock", value: "Out of Stock" },
@@ -36,16 +46,11 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
     { label: "Inactive", value: "Inactive" },
   ]
 
-  // Category options
   const categoryOptions = [
-    { label: "Snacks", value: "Snacks" },
-    { label: "Cigarette", value: "Cigarette" },
-    { label: "Juice", value: "Juice" },
-    { label: "Daily Essentials", value: "Daily Essentials" },
-    { label: "Personal Care", value: "Personal Care" },
+    ...BASE_CATEGORIES,
+    ...customCategories.map((c) => ({ label: c, value: c })),
   ]
 
-  // Product form state with multiple prices and category
   const [productForm, setProductForm] = useState({
     name: "",
     category: "",
@@ -62,7 +67,21 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
 
   const firestore = getFirestore(getApp())
 
-  // Initialize form when modal opens or product changes
+  // Fetch custom categories from Firestore on mount
+  React.useEffect(() => {
+    fetchCustomCategories()
+  }, [])
+
+  const fetchCustomCategories = async () => {
+    try {
+      const snapshot = await getDocs(collection(firestore, "categories"))
+      const cats = snapshot.docs.map((d) => d.data().name).filter(Boolean)
+      setCustomCategories(cats)
+    } catch (error) {
+      console.log("No custom categories found or error:", error)
+    }
+  }
+
   React.useEffect(() => {
     if (visible) {
       if (isEditMode && selectedProduct) {
@@ -101,6 +120,29 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
     })
     setShowStatusDropdown(false)
     setShowCategoryDropdown(false)
+    setShowNewCategoryInput(false)
+    setNewCategoryInput("")
+  }
+
+  const handleCreateCategory = async () => {
+    const trimmed = newCategoryInput.trim()
+    if (!trimmed) return
+    if (categoryOptions.find((o) => o.value.toLowerCase() === trimmed.toLowerCase())) {
+      Alert.alert("Error", "This category already exists")
+      return
+    }
+    try {
+      // Save to Firestore so all screens can use it
+      await setDoc(doc(firestore, "categories", trimmed), { name: trimmed, createdAt: new Date() })
+      setCustomCategories((prev) => [...prev, trimmed])
+      setProductForm((prev) => ({ ...prev, category: trimmed }))
+      setNewCategoryInput("")
+      setShowNewCategoryInput(false)
+      setShowCategoryDropdown(false)
+    } catch (error) {
+      console.error("Error saving category:", error)
+      Alert.alert("Error", "Failed to save category")
+    }
   }
 
   const selectProductImage = () => {
@@ -110,11 +152,8 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
       maxWidth: 800,
       maxHeight: 800,
     }
-
     launchImageLibrary(options, (response) => {
-      if (response.didCancel || response.error) {
-        return
-      }
+      if (response.didCancel || response.error) return
       if (response.assets && response.assets[0]) {
         uploadProductImageToCloudinary(response.assets[0])
       }
@@ -136,17 +175,11 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
       const response = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
         method: "POST",
         body: formData,
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       })
-
       const data = await response.json()
       if (data.secure_url) {
-        setProductForm((prev) => ({
-          ...prev,
-          imageUrl: data.secure_url,
-        }))
+        setProductForm((prev) => ({ ...prev, imageUrl: data.secure_url }))
         Alert.alert("Success", "Product image uploaded successfully!")
       } else {
         throw new Error("Upload failed")
@@ -161,8 +194,7 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
 
   const validateForm = () => {
     if (!productForm.name.trim()) {
-      infoAlert({ message: "Product name is required." });
-
+      infoAlert({ message: "Product name is required." })
       return false
     }
     if (!productForm.category.trim()) {
@@ -173,12 +205,10 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
       Alert.alert("Error", "Normal user price is required")
       return false
     }
-
     if (!productForm.mrpPrice.trim()) {
       Alert.alert("Error", "MRP price is required")
       return false
     }
-
     if (!productForm.retailPrice.trim()) {
       Alert.alert("Error", "Retail user price is required")
       return false
@@ -204,7 +234,6 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
 
   const saveProductToFirebase = async () => {
     if (!validateForm()) return
-
     try {
       setUploading(true)
       const productData = {
@@ -214,7 +243,6 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
         normalPrice: Number.parseFloat(productForm.normalPrice),
         retailPrice: Number.parseFloat(productForm.retailPrice),
         wholesalePrice: Number.parseFloat(productForm.wholesalePrice),
-        // Keep backward compatibility with existing price field
         price: Number.parseFloat(productForm.normalPrice),
         quantity: Number.parseInt(productForm.quantity),
         description: productForm.description.trim(),
@@ -226,24 +254,17 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
       }
 
       if (isEditMode && selectedProduct) {
-        // Update existing product
         const productRef = doc(firestore, "products", selectedProduct.id)
         await updateDoc(productRef, productData)
         Alert.alert("Success", "Product updated successfully!")
       } else {
-        // Add new product
         const productsCollection = collection(firestore, "products")
         productData.createdAt = new Date()
         await addDoc(productsCollection, productData)
         Alert.alert("Success", "Product added successfully!")
       }
 
-      // Callback to refresh products list
-      if (onProductSaved) {
-        onProductSaved()
-      }
-
-      // Close modal and reset form
+      if (onProductSaved) onProductSaved()
       onClose()
       resetProductForm()
     } catch (error) {
@@ -262,6 +283,8 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
   const handleCategorySelect = (category) => {
     setProductForm((prev) => ({ ...prev, category }))
     setShowCategoryDropdown(false)
+    setShowNewCategoryInput(false)
+    setNewCategoryInput("")
   }
 
   const handleClose = () => {
@@ -286,6 +309,7 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
             style={modalStyles.scrollContainer}
             contentContainerStyle={modalStyles.scrollContent}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             {/* Product Image Upload */}
             <View style={styles.formGroup}>
@@ -329,13 +353,18 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
               <Text style={styles.formLabel}>Category *</Text>
               <TouchableOpacity
                 style={[styles.formInput, { flexDirection: "row", justifyContent: "space-between" }]}
-                onPress={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                onPress={() => {
+                  setShowCategoryDropdown(!showCategoryDropdown)
+                  setShowNewCategoryInput(false)
+                  setNewCategoryInput("")
+                }}
               >
-                <Text style={[{ color: productForm.category ? "#374151" : "#9CA3AF" }]}>
+                <Text style={{ color: productForm.category ? "#374151" : "#9CA3AF" }}>
                   {productForm.category || "Select category"}
                 </Text>
                 <Icon name={showCategoryDropdown ? "chevron-up" : "chevron-down"} size={wp("4%")} color="#9CA3AF" />
               </TouchableOpacity>
+
               {showCategoryDropdown && (
                 <View style={styles.dropdownMenu}>
                   {categoryOptions.map((option) => (
@@ -360,36 +389,66 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
                       )}
                     </TouchableOpacity>
                   ))}
+
+                  {/* Create Category Row */}
+                  <View style={modalStyles.createCategoryRow}>
+                    {!showNewCategoryInput ? (
+                      <TouchableOpacity
+                        style={modalStyles.createCategoryTrigger}
+                        onPress={() => setShowNewCategoryInput(true)}
+                      >
+                        <View style={modalStyles.createCategoryIconWrap}>
+                          <Icon name="add" size={wp("3.5%")} color="#3B82F6" />
+                        </View>
+                        <Text style={modalStyles.createCategoryLabel}>Create category</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <View style={modalStyles.createCategoryInputRow}>
+                        <TextInput
+                          style={modalStyles.createCategoryInput}
+                          placeholder="New category name"
+                          placeholderTextColor="#9CA3AF"
+                          value={newCategoryInput}
+                          onChangeText={setNewCategoryInput}
+                          autoFocus
+                        />
+                        <TouchableOpacity style={modalStyles.createCategoryAddBtn} onPress={handleCreateCategory}>
+                          <Text style={modalStyles.createCategoryAddBtnText}>Add</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={modalStyles.createCategoryCancelBtn}
+                          onPress={() => {
+                            setShowNewCategoryInput(false)
+                            setNewCategoryInput("")
+                          }}
+                        >
+                          <Icon name="close" size={wp("4%")} color="#9CA3AF" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </View>
                 </View>
               )}
             </View>
 
             {/* MRP */}
             <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>
-                MRP Price (₹) *
-              </Text>
-
+              <Text style={styles.formLabel}>MRP Price (₹) *</Text>
               <TextInput
                 style={{
                   borderWidth: 1,
-                  borderColor: '#D1D5DB',
+                  borderColor: "#D1D5DB",
                   borderRadius: 8,
                   paddingHorizontal: 12,
                   paddingVertical: 12,
-                  fontSize: wp('4%'),
-                  color: '#374151',
-                  backgroundColor: '#FFFFFF',
+                  fontSize: wp("4%"),
+                  color: "#374151",
+                  backgroundColor: "#FFFFFF",
                 }}
                 placeholder="Enter MRP price"
                 keyboardType="decimal-pad"
                 value={productForm.mrpPrice}
-                onChangeText={(text) =>
-                  setProductForm((prev) => ({
-                    ...prev,
-                    mrpPrice: text,
-                  }))
-                }
+                onChangeText={(text) => setProductForm((prev) => ({ ...prev, mrpPrice: text }))}
               />
             </View>
 
@@ -397,7 +456,6 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
             <View style={modalStyles.priceSection}>
               <Text style={modalStyles.sectionTitle}>Pricing for Different User Types</Text>
 
-              {/* Normal User Price */}
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Normal User Price (₹) *</Text>
                 <TextInput
@@ -410,7 +468,6 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
                 />
               </View>
 
-              {/* Retail User Price */}
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Retail User Price (₹) *</Text>
                 <TextInput
@@ -423,7 +480,6 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
                 />
               </View>
 
-              {/* Wholesale User Price */}
               <View style={styles.formGroup}>
                 <Text style={styles.formLabel}>Wholesale User Price (₹) *</Text>
                 <TextInput
@@ -450,7 +506,7 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
                   value={productForm.isWholesaleProduct}
                   onValueChange={(value) => setProductForm((prev) => ({ ...prev, isWholesaleProduct: value }))}
                   trackColor={{ false: "#E5E7EB", true: "#3B82F6" }}
-                  thumbColor={productForm.isWholesaleProduct ? "#FFFFFF" : "#FFFFFF"}
+                  thumbColor="#FFFFFF"
                 />
               </View>
             </View>
@@ -475,7 +531,7 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
                 style={[styles.formInput, { flexDirection: "row", justifyContent: "space-between" }]}
                 onPress={() => setShowStatusDropdown(!showStatusDropdown)}
               >
-                <Text style={[{ color: productForm.status ? "#374151" : "#9CA3AF" }]}>
+                <Text style={{ color: productForm.status ? "#374151" : "#9CA3AF" }}>
                   {productForm.status || "Select status"}
                 </Text>
                 <Icon name={showStatusDropdown ? "chevron-up" : "chevron-down"} size={wp("4%")} color="#9CA3AF" />
@@ -499,7 +555,9 @@ const ProductAddModal = ({ visible, onClose, selectedProduct, isEditMode, onProd
                       >
                         {option.label}
                       </Text>
-                      {productForm.status === option.value && <Icon name="checkmark" size={wp("4%")} color="#3B82F6" />}
+                      {productForm.status === option.value && (
+                        <Icon name="checkmark" size={wp("4%")} color="#3B82F6" />
+                      )}
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -638,6 +696,61 @@ const modalStyles = {
     color: "#FFFFFF",
     fontSize: wp("4%"),
     fontWeight: "600",
+  },
+  // Create category styles
+  createCategoryRow: {
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    paddingHorizontal: wp("4%"),
+    paddingVertical: hp("1.5%"),
+  },
+  createCategoryTrigger: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: wp("2%"),
+  },
+  createCategoryIconWrap: {
+    width: wp("5%"),
+    height: wp("5%"),
+    borderRadius: wp("2.5%"),
+    backgroundColor: "#EBF8FF",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  createCategoryLabel: {
+    fontSize: wp("4%"),
+    color: "#3B82F6",
+    fontWeight: "500",
+  },
+  createCategoryInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: wp("2%"),
+  },
+  createCategoryInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: wp("2%"),
+    paddingHorizontal: wp("3%"),
+    paddingVertical: hp("1%"),
+    fontSize: wp("3.5%"),
+    color: "#374151",
+    backgroundColor: "#FFFFFF",
+  },
+  createCategoryAddBtn: {
+    backgroundColor: "#3B82F6",
+    borderRadius: wp("2%"),
+    paddingHorizontal: wp("3%"),
+    paddingVertical: hp("1%"),
+  },
+  createCategoryAddBtnText: {
+    color: "#FFFFFF",
+    fontSize: wp("3.5%"),
+    fontWeight: "500",
+  },
+  createCategoryCancelBtn: {
+    padding: wp("1%"),
   },
 }
 
